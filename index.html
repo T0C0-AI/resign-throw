@@ -405,7 +405,7 @@ function speak(text){
     speechSynthesis.cancel();            // 이전 음성 끊고 새로
     const u=new SpeechSynthesisUtterance(text);
     u.lang='ko-KR'; if(koVoice) u.voice=koVoice;
-    u.pitch=0.75; u.rate=1.0; u.volume=1; // 낮은 아저씨 톤
+    u.pitch=1.0; u.rate=1.08; u.volume=1; // 자연스러운 톤(약간 다급하게)
     speechSynthesis.speak(u);
   }catch(e){}
 }
