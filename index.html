@@ -139,7 +139,7 @@
     </div>
   </div>
 
-  <div class="hint" id="hint">👆 사직서를 잡고 부장님 얼굴로 휙! 던지세요</div>
+  <div class="hint" id="hint">👆 사직서를 잡고 휙! 던지세요 (부장님이 피하니 잘 조준 😏)</div>
   <div id="speech"></div>
   <div id="flash"></div>
 
@@ -188,6 +188,8 @@ let flying=false, dragging=false, timeScale=1;
 let p={x:0,y:0,vx:0,vy:0,rot:0,vr:0};   // 사직서 물리상태
 let last={x:0,y:0,t:0}, vel={x:0,y:0};   // 던질 때 손 속도 추적
 const GRAV=0.45, AIR=0.995;
+// 부장님 회피: 평소엔 좌우 왕복, 사직서 다가오면 한 번 휙 피함
+let bossX=0, bossTarget=0, wobble=0, dodged=false, reacting=false;
 
 function resetPaper(){
   flying=false; dragging=false;
@@ -234,9 +236,31 @@ paper.addEventListener('pointerup',e=>{
 /* ----- 발사 ----- */
 function launch(vx,vy){
   flying=true; throws++;
+  dodged=false;                 // 이번 투척의 회피 기회 초기화
   p.vx=vx; p.vy=vy;
   p.vr=vx*0.8 + (Math.sign(vx)||1)*4;
   sfx('throw');
+}
+
+/* ----- 부장님 회피 이동 ----- */
+function moveBoss(){
+  if(reacting) return;                 // 명중 리액션 중엔 안 움직임
+  const lim=W*0.30;                    // 화면 밖으론 안 나감
+  if(flying){
+    // 사직서가 위로 올라와 가까워지면 → 사직서 반대쪽으로 한 번 휙 피함
+    const pc=paperCenter();
+    const br=boss.getBoundingClientRect(), bcx=br.left+br.width/2;
+    if(!dodged && pc.y<H*0.55 && Math.abs(pc.x-bcx)<W*0.26){
+      const dir = pc.x>bcx ? -1 : 1;
+      bossTarget = Math.max(-lim, Math.min(lim, bossX + dir*W*0.17));
+      dodged=true;
+    }
+  } else {
+    wobble += 0.018;                   // 평소 좌우 왕복
+    bossTarget = Math.sin(wobble)*lim*0.55;
+  }
+  bossX += (bossTarget-bossX)*0.14;    // 부드럽게 따라감
+  boss.style.transform='translateX(-50%) translateX('+bossX.toFixed(1)+'px)';
 }
 
 /* ----- 게임 루프 ----- */
@@ -253,6 +277,7 @@ function loop(){
     // 화면 밖 = 빗나감
     if(p.y>H+120 || p.x<-160 || p.x>W+160){ miss(); }
   }
+  moveBoss();
   requestAnimationFrame(loop);
 }
 
@@ -287,8 +312,9 @@ function hit(perfect, x, y){
   stage.classList.add('slow'); flash.classList.add('on');
   setTimeout(()=>flash.classList.remove('on'),400);
   timeScale=0.18;
+  reacting=true;                 // 맞는 순간엔 회피 멈추고 휘청
   boss.classList.add('hit');
-  boss.style.transform='translateX(-50%) translate(0,4px) rotate(-2deg)';
+  boss.style.transform='translateX(-50%) translateX('+bossX.toFixed(1)+'px) translateY(4px) rotate(-2deg)';
   sfx(perfect?'perfect':'hit');
 
   popScore('+'+gain+(perfect?' 💥PERFECT':''), x, y, perfect);
@@ -297,7 +323,7 @@ function hit(perfect, x, y){
 
   setTimeout(()=>{
     stage.classList.remove('slow'); timeScale=1;
-    boss.classList.remove('hit'); boss.style.transform='translateX(-50%)';
+    boss.classList.remove('hit'); reacting=false;   // 다시 움직이기 시작
     if(throws>=10){ showResult(); } else { resetPaper(); }
   }, 850);
 }
