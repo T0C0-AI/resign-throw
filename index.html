@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>사직서 던지기 — 직장인의 로망</title>
+<!-- 파비콘: 날아가는 사직서(속도선 포함). 외부파일 없이 SVG 인라인 -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%233a3d42'/><g transform='rotate(-12 33 33)'><rect x='22' y='13' width='27' height='36' rx='2' fill='%23f4f1e8'/><rect x='26' y='19' width='19' height='3' rx='1' fill='%23cc4444'/><rect x='26' y='27' width='19' height='2' fill='%23cfc9b8'/><rect x='26' y='32' width='19' height='2' fill='%23cfc9b8'/><rect x='26' y='37' width='12' height='2' fill='%23cfc9b8'/><circle cx='41' cy='42' r='4' fill='none' stroke='%23cc4444' stroke-width='1.6'/></g><path d='M5 23 H16 M3 33 H14 M7 43 H18' stroke='%23ffd866' stroke-width='3' stroke-linecap='round'/></svg>">
 <style>
   :root{
     --wall:#3a3d42; --wall2:#2b2e33; --floor:#23262b;
@@ -252,12 +254,12 @@ function moveBoss(){
     const br=boss.getBoundingClientRect(), bcx=br.left+br.width/2;
     if(!dodged && pc.y<H*0.55 && Math.abs(pc.x-bcx)<W*0.26){
       const dir = pc.x>bcx ? -1 : 1;
-      bossTarget = Math.max(-lim, Math.min(lim, bossX + dir*W*0.17));
+      bossTarget = Math.max(-lim, Math.min(lim, bossX + dir*W*0.10));  // 회피 거리 약화
       dodged=true;
     }
   } else {
-    wobble += 0.018;                   // 평소 좌우 왕복
-    bossTarget = Math.sin(wobble)*lim*0.55;
+    wobble += 0.013;                   // 평소 좌우 왕복(느리게)
+    bossTarget = Math.sin(wobble)*lim*0.45;
   }
   bossX += (bossTarget-bossX)*0.14;    // 부드럽게 따라감
   boss.style.transform='translateX(-50%) translateX('+bossX.toFixed(1)+'px)';
@@ -287,9 +289,10 @@ function checkHit(){
   const c=paperCenter();
   const hr=bossHead.getBoundingClientRect();
   const cx=hr.left+hr.width/2, cy=hr.top+hr.height/2;
-  if(c.x>hr.left-10 && c.x<hr.right+10 && c.y>hr.top-10 && c.y<hr.bottom+10){
+  const pad=28;   // 판정 범위를 넉넉히 → 맞추기 쉽게
+  if(c.x>hr.left-pad && c.x<hr.right+pad && c.y>hr.top-pad && c.y<hr.bottom+pad){
     const dist=Math.hypot(c.x-cx, c.y-cy);
-    const perfect = dist < hr.width*0.35;
+    const perfect = dist < hr.width*0.48;
     hit(perfect, c.x, c.y);
   }
 }
@@ -297,7 +300,10 @@ function checkHit(){
 /* ----- 명중 ----- */
 const REACT=["어, 어이! 이게 무슨 짓이야!","자, 자네 지금 제정신인가?","이거 인사팀에 보고할 거야!","허허… 요즘 젊은 것들은…","내, 내 얼굴에 던졌어?!","수리 안 해! 반려야 반려!","올해 인사고과 각오해…!"];
 const PERFECT=["으악! 정통으로!!","눈, 눈에 맞았어!","끄응…! 정확하네 이놈…"];
-const MISS=["어딜 던져, 풉.","조준이나 똑바로 하지 그래?","빗나갔네, 한심하긴.","그 실력으로 퇴사를 해?"];
+// 그냥 못 던져서 빗나감 → 약올리기
+const MISS=["이렇게 던지면 사직서 안 받아줄 건데~? 😜","메~롱 😝 안 맞았지롱~","에이~ 또 빗나감 ㅋㅋ 퇴사 글렀네~","안 받아~ 안 받아~ 다시 던져보든가~","그 실력으론 평~생 우리 회사야 ㅋㅋㅋ","풉, 땀이나 닦고 던지지 그래~?","어휴~ 그 조준 실력 어디 안 가네 ㅋ"];
+// 부장님이 슬쩍 피했을 때 → 더 약올리기
+const DODGE=["후훗, 못 피할 줄 알았어? 😏","메~롱 피했지롱~ 😝","그렇게 느려서야 평생 못 맞춰~","어이쿠~ 살짝 비켜줬지롱~ ㅋㅋ","안 맞아줄 건데~ 약오르지? 😜","아슬아슬~ 안 받지롱~ 🤭"];
 
 function hit(perfect, x, y){
   flying=false;
@@ -329,7 +335,7 @@ function hit(perfect, x, y){
 }
 function miss(){
   flying=false; combo=0; updateCombo();
-  say(rand(MISS));
+  say(dodged ? rand(DODGE) : rand(MISS));   // 피해서 빗나감 vs 똥손 빗나감
   if(throws>=10){ showResult(); } else { resetPaper(); }
 }
 
@@ -347,7 +353,7 @@ function popScore(t,x,y,perfect){
   e.style.color=perfect?'#ff5d5d':'#ffd866';
   stage.appendChild(e); setTimeout(()=>e.remove(),900);
 }
-function rand(a){ return a[Math.floor(performance.now())%a.length]; }
+function rand(a){ return a[Math.floor(Math.random()*a.length)]; }
 
 /* ----- 결과 ----- */
 function showResult(){
