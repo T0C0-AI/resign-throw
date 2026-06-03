@@ -300,9 +300,6 @@ function checkHit(){
 /* ----- 명중 ----- */
 const REACT=["어, 어이! 이게 무슨 짓이야!","자, 자네 지금 제정신인가?","이거 인사팀에 보고할 거야!","허허… 요즘 젊은 것들은…","내, 내 얼굴에 던졌어?!","수리 안 해! 반려야 반려!","올해 인사고과 각오해…!"];
 const PERFECT=["으악! 정통으로!!","눈, 눈에 맞았어!","끄응…! 정확하네 이놈…"];
-// 부장님이 맞을 때 실제로 내뱉는 음성(TTS로 소리 남)
-const HIT_VOICE=["아이고!","어이쿠!","아야!","으윽!","아이고 야!"];
-const PERFECT_VOICE=["아이고 죽네!","으아악!","아이고 내 얼굴!","아이고 나 죽어!"];
 // 그냥 못 던져서 빗나감 → 약올리기
 const MISS=["이렇게 던지면 사직서 안 받아줄 건데~? 😜","메~롱 😝 안 맞았지롱~","에이~ 또 빗나감 ㅋㅋ 퇴사 글렀네~","안 받아~ 안 받아~ 다시 던져보든가~","그 실력으론 평~생 우리 회사야 ㅋㅋㅋ","풉, 땀이나 닦고 던지지 그래~?","어휴~ 그 조준 실력 어디 안 가네 ㅋ"];
 // 부장님이 슬쩍 피했을 때 → 더 약올리기
@@ -325,7 +322,7 @@ function hit(perfect, x, y){
   boss.classList.add('hit');
   boss.style.transform='translateX(-50%) translateX('+bossX.toFixed(1)+'px) translateY(4px) rotate(-2deg)';
   sfx(perfect?'perfect':'hit');
-  speak(perfect ? rand(PERFECT_VOICE) : rand(HIT_VOICE));   // "아이고!" 음성
+  scream(perfect);   // 만화풍 "으악!" 비명
 
   popScore('+'+gain+(perfect?' 💥PERFECT':''), x, y, perfect);
   say(perfect?rand(PERFECT):rand(REACT));
@@ -390,28 +387,32 @@ function toast(t){
   clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'),2200);
 }
 
-/* ----- 음성 (브라우저 내장 TTS, 외부파일 없음) ----- */
-let koVoice=null;
-function loadVoices(){
-  if(!('speechSynthesis' in window)) return;
-  const vs=speechSynthesis.getVoices();
-  koVoice = vs.find(v=>(v.lang||'').toLowerCase().startsWith('ko')) || koVoice;
-}
-loadVoices();
-if('speechSynthesis' in window && speechSynthesis.onvoiceschanged!==undefined){ speechSynthesis.onvoiceschanged=loadVoices; }
-function speak(text){
+/* ----- 효과음 (Web Audio 합성, 외부파일 없음) ----- */
+let actx;
+// 만화풍 비명: 피치가 솟구쳤다 출렁이며 떨어지는 "삐요요용~"
+function scream(big){
   try{
-    if(!('speechSynthesis' in window)) return;
-    speechSynthesis.cancel();            // 이전 음성 끊고 새로
-    const u=new SpeechSynthesisUtterance(text);
-    u.lang='ko-KR'; if(koVoice) u.voice=koVoice;
-    u.pitch=1.0; u.rate=1.08; u.volume=1; // 자연스러운 톤(약간 다급하게)
-    speechSynthesis.speak(u);
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const t=actx.currentTime, dur=big?0.6:0.45;
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.type='sawtooth';
+    o.frequency.setValueAtTime(big?520:430, t);
+    o.frequency.linearRampToValueAtTime(big?920:770, t+0.08);
+    o.frequency.linearRampToValueAtTime(big?700:560, t+0.2);
+    o.frequency.exponentialRampToValueAtTime(big?180:170, t+dur);
+    // 떨림(비브라토)으로 우스꽝스러운 비명 느낌
+    const lfo=actx.createOscillator(), lg=actx.createGain();
+    lfo.type='sine'; lfo.frequency.value=15; lg.gain.value=45;
+    lfo.connect(lg).connect(o.frequency);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.32, t+0.03);
+    g.gain.setValueAtTime(0.28, t+dur*0.7);
+    g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+    o.connect(g).connect(actx.destination);
+    o.start(t); lfo.start(t);
+    o.stop(t+dur+0.02); lfo.stop(t+dur+0.02);
   }catch(e){}
 }
-
-/* ----- 효과음 (Web Audio, 외부파일 없음) ----- */
-let actx;
 function sfx(type){
   try{
     actx = actx || new (window.AudioContext||window.webkitAudioContext)();
