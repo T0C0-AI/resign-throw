@@ -345,7 +345,7 @@ document.getElementById('againBtn').onclick=()=>{
 };
 document.getElementById('shareBtn').onclick=async()=>{
   const rate=throws?Math.round(hits/throws*100):0;
-  const txt=`🗑️ 사직서 던지기 결과\n사직서 ${throws}장 투척 / 명중 ${hits}장 (${rate}%)\n최고 ${bestCombo}콤보 · 총 ${score}점\n부장님 얼굴에 ${hits}번 적중 시켰다 😎\n#사직서던지기`;
+  const txt=`🗑️ 사직서 던지기 결과\n사직서 ${throws}장 투척 / 명중 ${hits}장 (${rate}%)\n최고 ${bestCombo}콤보 · 총 ${score}점\n부장님 얼굴에 ${hits}번 적중 시켰다 😎\n\n👉 너도 던져봐: https://t0c0-ai.github.io/resign-throw/\n#사직서던지기`;
   try{ await navigator.clipboard.writeText(txt); toast('복사 완료! 단톡방에 붙여넣기 하세요 📋'); }
   catch(e){ toast('복사 실패 — 스크린샷으로 공유해주세요 📸'); }
 };
