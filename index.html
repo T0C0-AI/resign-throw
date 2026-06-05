@@ -267,11 +267,13 @@ function moveBoss(){
 
 function moveAim(){
   if(flying||reacting){ aimEl.style.display='none'; return; }
-  /* 조준선: 좌우로 sin 왕복, 콤보 많을수록 빨라짐 */
+  /* 조준선: 부장 얼굴 높이 기준으로 좌우 왕복, 콤보 많을수록 빨라짐 */
   aimT += 0.022 + combo*0.004;
   const range=W*0.32;
   aimX = W/2 + bossX + Math.sin(aimT)*range;
-  aimY = H*0.35 + Math.sin(aimT*0.7)*H*0.04;
+  /* Y는 부장 얼굴 중심 높이에 고정 (bossHead 실측값 기준) */
+  const hr2=bossHead.getBoundingClientRect();
+  aimY = hr2.top + hr2.height*0.45;
   aimEl.style.left=(aimX-38)+'px';
   aimEl.style.top =(aimY-38)+'px';
   /* 조준선이 부장 머리 위에 있으면 빨간색으로 변경 */
