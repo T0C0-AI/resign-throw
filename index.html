@@ -4,142 +4,94 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>사직서 던지기 — 직장인의 로망</title>
-<!-- 파비콘: 날아가는 사직서(속도선 포함). 외부파일 없이 SVG 인라인 -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%233a3d42'/><g transform='rotate(-12 33 33)'><rect x='22' y='13' width='27' height='36' rx='2' fill='%23f4f1e8'/><rect x='26' y='19' width='19' height='3' rx='1' fill='%23cc4444'/><rect x='26' y='27' width='19' height='2' fill='%23cfc9b8'/><rect x='26' y='32' width='19' height='2' fill='%23cfc9b8'/><rect x='26' y='37' width='12' height='2' fill='%23cfc9b8'/><circle cx='41' cy='42' r='4' fill='none' stroke='%23cc4444' stroke-width='1.6'/></g><path d='M5 23 H16 M3 33 H14 M7 43 H18' stroke='%23ffd866' stroke-width='3' stroke-linecap='round'/></svg>">
 <style>
-  :root{
-    --wall:#3a3d42; --wall2:#2b2e33; --floor:#23262b;
-    --desk:#6b5641; --desk2:#574533; --paper:#f4f1e8;
-    --accent:#c44; --ok:#4ca76a;
-  }
+  :root{ --paper:#f4f1e8; --accent:#fda81f; --accent2:#ffd866; }
   *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
   html,body{height:100%; overflow:hidden; font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;}
-  /* 칙칙한 사무실. 형광등 천장 + 회색 벽 + 바닥 */
   #stage{
     position:relative; width:100%; height:100%;
-    background:
-      linear-gradient(180deg,#4a4d52 0 6%, var(--wall) 6% 70%, var(--floor) 70% 100%);
+    background:#bfeeff url("assets/bg_office.webp") center/cover no-repeat;
     overflow:hidden; touch-action:none; user-select:none;
   }
-  /* 천장 형광등 */
-  .light{position:absolute; top:2%; height:1.4%; width:24%; background:#dfe6e9; border-radius:4px; box-shadow:0 0 40px 10px rgba(223,230,233,.35);}
-  .light.l{left:18%;} .light.r{right:18%;}
-  /* 벽 시계 / 액자(현실 디테일) */
-  .frame{position:absolute; top:14%; border:5px solid #1f2226; background:var(--wall2); color:#7b828a; font-size:11px; display:flex; align-items:center; justify-content:center; text-align:center; padding:6px; line-height:1.3;}
-  .frame.f1{left:8%; width:90px; height:64px;}
-  .frame.f2{right:8%; width:90px; height:64px;}
-  .clock{position:absolute; top:11%; left:50%; transform:translateX(-50%); width:54px; height:54px; border-radius:50%; background:#1c1f23; border:4px solid #14171a; color:#aeb4ba; font-size:11px; display:flex; align-items:center; justify-content:center;}
 
-  /* 책상 */
-  #desk{position:absolute; bottom:0; left:0; width:100%; height:26%;
-    background:linear-gradient(180deg,var(--desk) 0 22%, var(--desk2) 22% 100%);
-    border-top:6px solid #3d3024; box-shadow:0 -10px 30px rgba(0,0,0,.4);}
-  .nameplate{position:absolute; bottom:6%; left:50%; transform:translateX(-50%);
-    background:#1b1e22; color:#c9a86a; padding:6px 18px; border-radius:4px; font-size:13px;
-    letter-spacing:2px; border:1px solid #3a3024; box-shadow:0 2px 6px rgba(0,0,0,.4);}
+  /* 책상 (앞 레이어) */
+  #desk{position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+    width:118%; max-width:none; z-index:10; pointer-events:none;
+    filter:drop-shadow(0 -4px 12px rgba(0,0,0,.18));}
 
-  /* 상사 캐릭터 (대머리 중년 부장님) */
-  #boss{position:absolute; left:50%; bottom:23%; transform:translateX(-50%); width:150px; transition:transform .08s;}
-  #boss .shoulders{position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:150px; height:60px; background:#2c3038; border-radius:40px 40px 0 0;}
-  #boss .tie{position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:16px; height:46px; background:var(--accent); clip-path:polygon(50% 0,100% 18%,75% 100%,25% 100%,0 18%);}
-  #boss .head{position:absolute; bottom:46px; left:50%; transform:translateX(-50%); width:92px; height:104px;}
-  .skin{position:absolute; inset:0; background:#e8b98f; border-radius:46px 46px 44px 44px;}
-  /* 옆머리(M자/대머리) */
-  .hair{position:absolute; top:6px; width:24px; height:40px; background:#6b6b6b; border-radius:14px;}
-  .hair.lh{left:-2px;} .hair.rh{right:-2px;}
-  .glasses{position:absolute; top:42px; left:50%; transform:translateX(-50%); display:flex; gap:6px;}
-  .glasses i{display:block; width:26px; height:20px; border:3px solid #222; border-radius:6px; background:rgba(255,255,255,.12);}
-  .eye{position:absolute; width:8px; height:8px; background:#222; border-radius:50%; top:50px;}
-  .eye.le{left:30px;} .eye.re{right:30px;}
-  .mouth{position:absolute; bottom:14px; left:50%; transform:translateX(-50%); width:26px; height:8px; border-bottom:3px solid #6b3b2a; border-radius:0 0 20px 20px;}
-  .sweat{position:absolute; top:30px; right:6px; font-size:18px; opacity:0; transition:opacity .2s;}
-  /* 명중 시 표정 */
-  #boss.hit .mouth{height:24px; width:24px; border:3px solid #6b3b2a; border-radius:50%; bottom:8px;}
-  #boss.hit .eye{height:3px; border-radius:2px; top:52px;}
-  #boss.hit .sweat{opacity:1;}
+  /* 던지는 직원 */
+  #thrower{position:absolute; left:-4%; bottom:9%; height:53%; z-index:7;
+    pointer-events:none; filter:drop-shadow(0 8px 10px rgba(0,0,0,.25));}
+
+  /* 상사 */
+  #boss{position:absolute; left:50%; bottom:22%; transform:translateX(-50%);
+    width:260px; height:300px; z-index:8; transition:transform .08s;}
+  #boss .bossimg{position:absolute; left:50%; bottom:0; transform:translateX(-50%);
+    height:100%; width:auto; filter:drop-shadow(0 8px 12px rgba(0,0,0,.3));}
+  /* 상태별 미세 정렬 (얼굴 위치 맞춤) */
+  #boss[data-state="dodge"]  .bossimg{height:98%;}
+  #boss[data-state="hit"]    .bossimg{height:94%; transform:translateX(-50%) translateY(-20px);}
+  #boss[data-state="perfect"].bossimg{height:106%; transform:translateX(-48%) translateY(-14px);}
+  /* 충돌 판정용 투명 박스(부장 얼굴) */
+  #boss .head{position:absolute; left:34%; top:8%; width:42%; height:34%; z-index:9;}
 
   /* 던질 사직서 */
-  #paper{position:absolute; width:84px; height:64px; cursor:grab; z-index:30; touch-action:none;
+  #paper{position:absolute; width:72px; height:108px; cursor:grab; z-index:30; touch-action:none;
     filter:drop-shadow(0 6px 8px rgba(0,0,0,.45));}
   #paper.grab{cursor:grabbing;}
-  .sheet{position:relative; width:100%; height:100%; background:var(--paper); border-radius:3px;
-    padding:7px 8px; transform:rotate(-3deg);
-    box-shadow:inset 0 0 0 1px #d8d2c0;}
-  .sheet b{display:block; font-size:9px; color:#b23; text-align:center; letter-spacing:1px; margin-bottom:3px;}
-  .sheet .ln{height:3px; background:#cfc9b8; border-radius:2px; margin:3px 2px;}
-  .sheet .ln.short{width:55%;}
-  .stamp{position:absolute; right:6px; bottom:5px; width:18px; height:18px; border:2px solid #c44; border-radius:50%; color:#c44; font-size:8px; display:flex; align-items:center; justify-content:center; transform:rotate(-12deg); opacity:.8;}
+  #paper img{width:100%; height:100%; object-fit:contain; display:block; pointer-events:none;}
+
+  /* 이펙트 레이어 */
+  .fx{position:absolute; pointer-events:none; z-index:37; opacity:1; transform:scale(.4);
+    transition:transform .5s ease-out, opacity .5s ease-out; will-change:transform,opacity;}
+  .fxword{position:absolute; pointer-events:none; z-index:39; opacity:1; transform:translateY(0) scale(.5);
+    transition:transform .55s cubic-bezier(.2,1.4,.4,1), opacity .55s ease-out;}
 
   /* HUD */
   #hud{position:absolute; top:10px; left:10px; right:10px; display:flex; justify-content:space-between; z-index:40; pointer-events:none;}
-  .card{background:rgba(20,22,26,.78); color:#eef; padding:8px 14px; border-radius:10px; font-size:13px; line-height:1.5; backdrop-filter:blur(4px);}
+  .card{background:rgba(20,30,45,.72); color:#eef; padding:8px 14px; border-radius:10px; font-size:13px; line-height:1.5; backdrop-filter:blur(4px);}
   .card .big{font-size:22px; font-weight:800;}
-  #combo{color:#ffd866;}
-  /* 말풍선 */
+  #combo{color:var(--accent2);}
   #speech{position:absolute; left:50%; bottom:54%; transform:translateX(-50%) scale(0); transform-origin:bottom center;
     background:#fff; color:#222; padding:9px 14px; border-radius:14px; font-size:14px; font-weight:700; white-space:nowrap;
     box-shadow:0 4px 14px rgba(0,0,0,.3); z-index:35; transition:transform .15s cubic-bezier(.2,1.4,.4,1);}
   #speech::after{content:""; position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); border:8px solid transparent; border-top-color:#fff; border-bottom:0;}
   #speech.show{transform:translateX(-50%) scale(1);}
-  /* 점수 팝 */
   .pop{position:absolute; z-index:38; font-weight:900; font-size:24px; pointer-events:none; animation:popUp .9s ease-out forwards; text-shadow:0 2px 4px rgba(0,0,0,.4);}
   @keyframes popUp{0%{transform:translateY(0) scale(.6); opacity:0;} 20%{opacity:1; transform:translateY(-10px) scale(1.2);} 100%{transform:translateY(-70px) scale(1); opacity:0;}}
-  /* 슬로우모션 플래시 */
   #flash{position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:50;}
   #flash.on{animation:fl .4s ease-out;}
   @keyframes fl{0%{opacity:.55;}100%{opacity:0;}}
   #stage.slow #paper, #stage.slow #boss{transition:transform .4s linear;}
-
-  .hint{position:absolute; bottom:30%; left:50%; transform:translateX(-50%); color:#cdd2d8; font-size:13px; background:rgba(0,0,0,.35); padding:6px 14px; border-radius:20px; z-index:36; animation:bob 1.6s ease-in-out infinite;}
+  .hint{position:absolute; bottom:34%; left:50%; transform:translateX(-50%); color:#1c3a4a; font-size:13px; background:rgba(255,255,255,.7); padding:6px 14px; border-radius:20px; z-index:36; animation:bob 1.6s ease-in-out infinite;}
   @keyframes bob{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-6px);}}
 
-  /* 결과 패널 */
-  #result{position:absolute; inset:0; background:rgba(12,14,18,.86); z-index:60; display:none; flex-direction:column; align-items:center; justify-content:center; color:#fff; text-align:center; padding:24px; backdrop-filter:blur(3px);}
+  #result{position:absolute; inset:0; background:rgba(12,20,30,.84); z-index:60; display:none; flex-direction:column; align-items:center; justify-content:center; color:#fff; text-align:center; padding:24px; backdrop-filter:blur(3px);}
   #result.show{display:flex;}
   #result h2{font-size:26px; margin-bottom:6px;}
   #result .sub{color:#9aa0a8; margin-bottom:18px; font-size:14px;}
-  #result .stats{background:#1b1f26; border-radius:14px; padding:18px 26px; font-size:16px; line-height:2; min-width:240px;}
-  #result .stats span{color:#ffd866; font-weight:800;}
+  #result .stats{background:#16263a; border-radius:14px; padding:18px 26px; font-size:16px; line-height:2; min-width:240px;}
+  #result .stats span{color:var(--accent2); font-weight:800;}
   #result .btns{margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;}
   button{font-family:inherit; border:0; cursor:pointer; padding:12px 20px; border-radius:10px; font-size:15px; font-weight:700;}
-  .b-primary{background:var(--accent); color:#fff;}
-  .b-ghost{background:#2a2f37; color:#dfe4ea;}
+  .b-primary{background:var(--accent); color:#3a2300;}
+  .b-ghost{background:#22364a; color:#dfe4ea;}
   #toast{position:absolute; bottom:8%; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:10px 18px; border-radius:24px; font-size:13px; opacity:0; z-index:70; transition:opacity .3s;}
   #toast.show{opacity:1;}
 </style>
 </head>
 <body>
 <div id="stage">
-  <div class="light l"></div><div class="light r"></div>
-  <div class="clock">🕕 6:01</div>
-  <div class="frame f1">"불가능은<br>없다"</div>
-  <div class="frame f2">이달의<br>우수사원<br>: (공석)</div>
+  <img id="thrower" src="assets/thrower_ready.webp" alt="직원">
 
-  <!-- 상사 -->
-  <div id="boss">
-    <div class="shoulders"></div>
-    <div class="tie"></div>
-    <div class="head">
-      <div class="skin"></div>
-      <div class="hair lh"></div><div class="hair rh"></div>
-      <div class="glasses"><i></i><i></i></div>
-      <div class="eye le"></div><div class="eye re"></div>
-      <div class="mouth"></div>
-      <div class="sweat">💦</div>
-    </div>
+  <div id="boss" data-state="idle">
+    <img class="bossimg" src="assets/boss_idle.webp" alt="부장">
+    <div class="head"></div>
   </div>
 
-  <div id="desk"><div class="nameplate">부장 金</div></div>
+  <img id="desk" src="assets/desk.webp" alt="책상">
 
-  <!-- 던질 사직서 -->
-  <div id="paper">
-    <div class="sheet">
-      <b>辭 職 書</b>
-      <div class="ln"></div><div class="ln"></div><div class="ln short"></div>
-      <div class="ln"></div><div class="ln short"></div>
-      <span class="stamp">印</span>
-    </div>
-  </div>
+  <div id="paper"><img src="assets/paper.webp" alt="사직서"></div>
 
   <div class="hint" id="hint">👆 사직서를 잡고 휙! 던지세요 (부장님이 피하니 잘 조준 😏)</div>
   <div id="speech"></div>
@@ -149,7 +101,7 @@
     <div class="card">점수<div class="big" id="score">0</div></div>
     <div class="card" style="text-align:right">남은 사직서<div class="big" id="ammo">∞</div></div>
   </div>
-  <div class="card" id="comboCard" style="position:absolute; top:74px; left:50%; transform:translateX(-50%); display:none; z-index:40;">
+  <div class="card" id="comboCard" style="position:absolute; top:84px; left:50%; transform:translateX(-50%); display:none; z-index:40;">
     🔥 <span id="combo">0</span> 콤보!
   </div>
 
@@ -171,11 +123,13 @@
 </div>
 
 <script>
-/* ===== 사직서 던지기: 드래그 발사 + 포물선 물리 + 충돌/콤보/슬로우모션 ===== */
+/* ===== 물리·점수·충돌 로직은 원본 그대로. 그림 교체 + 상태별 스프라이트/이펙트만 추가 ===== */
 const stage=document.getElementById('stage');
 const paper=document.getElementById('paper');
 const boss=document.getElementById('boss');
+const bossImg=boss.querySelector('.bossimg');
 const bossHead=boss.querySelector('.head');
+const thrImg=document.getElementById('thrower');
 const speech=document.getElementById('speech');
 const flash=document.getElementById('flash');
 const elScore=document.getElementById('score'), elCombo=document.getElementById('combo');
@@ -184,29 +138,48 @@ const comboCard=document.getElementById('comboCard'), hint=document.getElementBy
 let W=stage.clientWidth, H=stage.clientHeight;
 addEventListener('resize',()=>{W=stage.clientWidth;H=stage.clientHeight; if(!flying)resetPaper();});
 
-// 상태
 let score=0, combo=0, bestCombo=0, throws=0, hits=0;
 let flying=false, dragging=false, timeScale=1;
-let p={x:0,y:0,vx:0,vy:0,rot:0,vr:0};   // 사직서 물리상태
-let last={x:0,y:0,t:0}, vel={x:0,y:0};   // 던질 때 손 속도 추적
+let p={x:0,y:0,vx:0,vy:0,rot:0,vr:0};
+let last={x:0,y:0,t:0}, vel={x:0,y:0};
 const GRAV=0.45, AIR=0.995;
-// 부장님 회피: 평소엔 좌우 왕복, 사직서 다가오면 한 번 휙 피함
 let bossX=0, bossTarget=0, wobble=0, dodged=false, reacting=false;
+
+/* ----- 스프라이트 상태 교체 ----- */
+const BOSS={idle:'boss_idle.webp',dodge:'boss_dodge.webp',hit:'boss_hit.webp',perfect:'boss_perfect.webp'};
+function setBoss(s){ if(boss.dataset.state!==s){ boss.dataset.state=s; bossImg.src='assets/'+BOSS[s]; } }
+function setThrower(s){ thrImg.src='assets/thrower_'+s+'.webp'; }
+
+/* ----- 이펙트 띄우기 ----- */
+function showFx(src,x,y,size,spin){
+  const e=document.createElement('img'); e.className='fx'; e.src='assets/'+src;
+  e.style.left=(x-size/2)+'px'; e.style.top=(y-size/2)+'px'; e.style.width=size+'px';
+  stage.appendChild(e);
+  requestAnimationFrame(()=>{ e.style.transform='scale(1.25) rotate('+(spin||0)+'deg)'; e.style.opacity='0'; });
+  setTimeout(()=>e.remove(),520);
+}
+function showWord(src,x,y,size){
+  const e=document.createElement('img'); e.className='fxword'; e.src='assets/'+src;
+  e.style.left=(x-size/2)+'px'; e.style.top=(y-size/2)+'px'; e.style.width=size+'px';
+  stage.appendChild(e);
+  requestAnimationFrame(()=>{ e.style.transform='translateY(-30px) scale(1.1)'; e.style.opacity='0'; });
+  setTimeout(()=>e.remove(),560);
+}
 
 function resetPaper(){
   flying=false; dragging=false;
   p.rot=-3; p.vr=0;
-  p.x = W/2 - 42;
-  p.y = H - paper.offsetHeight - H*0.10;  // 책상 위 손 앞
+  p.x = W/2 - 36;
+  p.y = H - paper.offsetHeight - H*0.10;
+  setThrower('ready'); setBoss('idle');
   render();
 }
 function render(){
   paper.style.left=p.x+'px';
   paper.style.top=p.y+'px';
-  paper.querySelector('.sheet').style.transform='rotate('+p.rot+'deg)';
+  paper.style.transform='rotate('+p.rot+'deg)';
 }
 
-/* ----- 드래그 (잡기) ----- */
 paper.addEventListener('pointerdown',e=>{
   if(flying) return;
   dragging=true; paper.classList.add('grab');
@@ -218,7 +191,7 @@ paper.addEventListener('pointerdown',e=>{
 paper.addEventListener('pointermove',e=>{
   if(!dragging) return;
   const now=performance.now(), dt=Math.max(now-last.t,1);
-  vel.x=(e.clientX-last.x)/dt*16;   // px per frame(~16ms)
+  vel.x=(e.clientX-last.x)/dt*16;
   vel.y=(e.clientY-last.y)/dt*16;
   p.x += e.clientX-last.x;
   p.y += e.clientY-last.y;
@@ -229,43 +202,42 @@ paper.addEventListener('pointermove',e=>{
 paper.addEventListener('pointerup',e=>{
   if(!dragging) return;
   dragging=false; paper.classList.remove('grab');
-  // 위로 던졌을 때만 발사 (아래로 휙은 무시)
   const speed=Math.hypot(vel.x,vel.y);
   if(speed<4){ resetPaper(); return; }
   launch(vel.x, vel.y);
 });
 
-/* ----- 발사 ----- */
 function launch(vx,vy){
   flying=true; throws++;
-  dodged=false;                 // 이번 투척의 회피 기회 초기화
+  dodged=false;
   p.vx=vx; p.vy=vy;
   p.vr=vx*0.8 + (Math.sign(vx)||1)*4;
+  setThrower('throw');
+  const c=paperCenter();
+  showFx('fx_speedLines.webp', c.x, c.y, 220, 0);
   sfx('throw');
 }
 
-/* ----- 부장님 회피 이동 ----- */
 function moveBoss(){
-  if(reacting) return;                 // 명중 리액션 중엔 안 움직임
-  const lim=W*0.30;                    // 화면 밖으론 안 나감
+  if(reacting) return;
+  const lim=W*0.30;
   if(flying){
-    // 사직서가 위로 올라와 가까워지면 → 사직서 반대쪽으로 한 번 휙 피함
     const pc=paperCenter();
     const br=boss.getBoundingClientRect(), bcx=br.left+br.width/2;
     if(!dodged && pc.y<H*0.55 && Math.abs(pc.x-bcx)<W*0.26){
       const dir = pc.x>bcx ? -1 : 1;
-      bossTarget = Math.max(-lim, Math.min(lim, bossX + dir*W*0.10));  // 회피 거리 약화
+      bossTarget = Math.max(-lim, Math.min(lim, bossX + dir*W*0.10));
       dodged=true;
+      setBoss('dodge');
     }
   } else {
-    wobble += 0.013;                   // 평소 좌우 왕복(느리게)
+    wobble += 0.013;
     bossTarget = Math.sin(wobble)*lim*0.45;
   }
-  bossX += (bossTarget-bossX)*0.14;    // 부드럽게 따라감
+  bossX += (bossTarget-bossX)*0.14;
   boss.style.transform='translateX(-50%) translateX('+bossX.toFixed(1)+'px)';
 }
 
-/* ----- 게임 루프 ----- */
 function loop(){
   if(flying){
     const ts=timeScale;
@@ -276,7 +248,6 @@ function loop(){
     p.rot += p.vr*ts;
     render();
     checkHit();
-    // 화면 밖 = 빗나감
     if(p.y>H+120 || p.x<-160 || p.x>W+160){ miss(); }
   }
   moveBoss();
@@ -289,7 +260,7 @@ function checkHit(){
   const c=paperCenter();
   const hr=bossHead.getBoundingClientRect();
   const cx=hr.left+hr.width/2, cy=hr.top+hr.height/2;
-  const pad=28;   // 판정 범위를 넉넉히 → 맞추기 쉽게
+  const pad=28;
   if(c.x>hr.left-pad && c.x<hr.right+pad && c.y>hr.top-pad && c.y<hr.bottom+pad){
     const dist=Math.hypot(c.x-cx, c.y-cy);
     const perfect = dist < hr.width*0.48;
@@ -297,32 +268,30 @@ function checkHit(){
   }
 }
 
-/* ----- 명중 ----- */
 const REACT=["어, 어이! 이게 무슨 짓이야!","자, 자네 지금 제정신인가?","이거 인사팀에 보고할 거야!","허허… 요즘 젊은 것들은…","내, 내 얼굴에 던졌어?!","수리 안 해! 반려야 반려!","올해 인사고과 각오해…!"];
 const PERFECT=["으악! 정통으로!!","눈, 눈에 맞았어!","끄응…! 정확하네 이놈…"];
-// 그냥 못 던져서 빗나감 → 약올리기
 const MISS=["이렇게 던지면 사직서 안 받아줄 건데~? 😜","메~롱 😝 안 맞았지롱~","에이~ 또 빗나감 ㅋㅋ 퇴사 글렀네~","안 받아~ 안 받아~ 다시 던져보든가~","그 실력으론 평~생 우리 회사야 ㅋㅋㅋ","풉, 땀이나 닦고 던지지 그래~?","어휴~ 그 조준 실력 어디 안 가네 ㅋ"];
-// 부장님이 슬쩍 피했을 때 → 더 약올리기
 const DODGE=["후훗, 못 피할 줄 알았어? 😏","메~롱 피했지롱~ 😝","그렇게 느려서야 평생 못 맞춰~","어이쿠~ 살짝 비켜줬지롱~ ㅋㅋ","안 맞아줄 건데~ 약오르지? 😜","아슬아슬~ 안 받지롱~ 🤭"];
 
 function hit(perfect, x, y){
   flying=false;
   hits++; combo++; bestCombo=Math.max(bestCombo,combo);
   const base = perfect?100:50;
-  const bonus = (combo-1)*20;            // 콤보 보너스
+  const bonus = (combo-1)*20;
   const gain = base+bonus;
   score += gain;
   elScore.textContent=score;
 
-  // 슬로우모션 + 플래시 + 효과음
   stage.classList.add('slow'); flash.classList.add('on');
   setTimeout(()=>flash.classList.remove('on'),400);
   timeScale=0.18;
-  reacting=true;                 // 맞는 순간엔 회피 멈추고 휘청
-  boss.classList.add('hit');
+  reacting=true;
+  setBoss(perfect?'perfect':'hit');
   boss.style.transform='translateX(-50%) translateX('+bossX.toFixed(1)+'px) translateY(4px) rotate(-2deg)';
+  showFx(perfect?'fx_perfect.webp':'fx_impact.webp', x, y, perfect?280:180, 0);
+  showWord('fx_word_hit.webp', x, y-30, 150);
   sfx(perfect?'perfect':'hit');
-  scream(perfect);   // 만화풍 "으악!" 비명
+  scream(perfect);
 
   popScore('+'+gain+(perfect?' 💥PERFECT':''), x, y, perfect);
   say(perfect?rand(PERFECT):rand(REACT));
@@ -330,13 +299,17 @@ function hit(perfect, x, y){
 
   setTimeout(()=>{
     stage.classList.remove('slow'); timeScale=1;
-    boss.classList.remove('hit'); reacting=false;   // 다시 움직이기 시작
+    reacting=false;
     if(throws>=10){ showResult(); } else { resetPaper(); }
   }, 850);
 }
 function miss(){
   flying=false; combo=0; updateCombo();
-  say(dodged ? rand(DODGE) : rand(MISS));   // 피해서 빗나감 vs 똥손 빗나감
+  if(dodged){
+    const br=boss.getBoundingClientRect();
+    showWord('fx_word_dodge.webp', br.left+br.width/2, br.top+br.height*0.2, 160);
+    say(rand(DODGE));
+  } else { say(rand(MISS)); }
   if(throws>=10){ showResult(); } else { resetPaper(); }
 }
 
@@ -351,12 +324,11 @@ function say(t){
 function popScore(t,x,y,perfect){
   const e=document.createElement('div'); e.className='pop'; e.textContent=t;
   e.style.left=(x-20)+'px'; e.style.top=(y-10)+'px';
-  e.style.color=perfect?'#ff5d5d':'#ffd866';
+  e.style.color=perfect?'#ff5d5d':'#fda81f';
   stage.appendChild(e); setTimeout(()=>e.remove(),900);
 }
 function rand(a){ return a[Math.floor(Math.random()*a.length)]; }
 
-/* ----- 결과 ----- */
 function showResult(){
   const rate=throws?Math.round(hits/throws*100):0;
   document.getElementById('rThrow').textContent=throws;
@@ -378,7 +350,7 @@ document.getElementById('againBtn').onclick=()=>{
 };
 document.getElementById('shareBtn').onclick=async()=>{
   const rate=throws?Math.round(hits/throws*100):0;
-  const txt=`🗑️ 사직서 던지기 결과\n사직서 ${throws}장 투척 / 명중 ${hits}장 (${rate}%)\n최고 ${bestCombo}콤보 · 총 ${score}점\n부장님 얼굴에 ${hits}번 적중 시켰다 😎\n\n👉 너도 던져봐: https://t0c0-ai.github.io/resign-throw/\n#사직서던지기`;
+  const txt=`🗑️ 사직서 던지기 결과\n사직서 ${throws}장 투척 / 명중 ${hits}장 (${rate}%)\n최고 ${bestCombo}콤보 · 총 ${score}점\n부장님 얼굴에 ${hits}번 적중 😎\n\n👉 너도 던져봐: https://t0c0-ai.github.io/resign-throw/\n#사직서던지기`;
   try{ await navigator.clipboard.writeText(txt); toast('복사 완료! 단톡방에 붙여넣기 하세요 📋'); }
   catch(e){ toast('복사 실패 — 스크린샷으로 공유해주세요 📸'); }
 };
@@ -387,9 +359,7 @@ function toast(t){
   clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'),2200);
 }
 
-/* ----- 효과음 (Web Audio 합성, 외부파일 없음) ----- */
 let actx;
-// 만화풍 비명: 피치가 솟구쳤다 출렁이며 떨어지는 "삐요요용~"
 function scream(big){
   try{
     actx = actx || new (window.AudioContext||window.webkitAudioContext)();
@@ -400,7 +370,6 @@ function scream(big){
     o.frequency.linearRampToValueAtTime(big?920:770, t+0.08);
     o.frequency.linearRampToValueAtTime(big?700:560, t+0.2);
     o.frequency.exponentialRampToValueAtTime(big?180:170, t+dur);
-    // 떨림(비브라토)으로 우스꽝스러운 비명 느낌
     const lfo=actx.createOscillator(), lg=actx.createGain();
     lfo.type='sine'; lfo.frequency.value=15; lg.gain.value=45;
     lfo.connect(lg).connect(o.frequency);
@@ -416,19 +385,19 @@ function scream(big){
 function sfx(type){
   try{
     actx = actx || new (window.AudioContext||window.webkitAudioContext)();
-    if(type==='throw'){ // 휙
+    if(type==='throw'){
       const o=actx.createOscillator(), g=actx.createGain();
       o.type='triangle'; o.frequency.setValueAtTime(700,actx.currentTime);
       o.frequency.exponentialRampToValueAtTime(180,actx.currentTime+0.18);
       g.gain.setValueAtTime(0.18,actx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+0.2);
       o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime+0.2);
-    } else if(type==='hit'){ // 퍽 (저음 thud)
+    } else if(type==='hit'){
       const o=actx.createOscillator(), g=actx.createGain();
       o.type='sine'; o.frequency.setValueAtTime(160,actx.currentTime);
       o.frequency.exponentialRampToValueAtTime(50,actx.currentTime+0.15);
       g.gain.setValueAtTime(0.4,actx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+0.25);
       o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime+0.25);
-    } else { // perfect 띠링
+    } else {
       [880,1320].forEach((f,i)=>{ const o=actx.createOscillator(), g=actx.createGain();
         o.type='square'; o.frequency.value=f;
         g.gain.setValueAtTime(0.0001,actx.currentTime+i*0.08);
@@ -436,7 +405,6 @@ function sfx(type){
         g.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+i*0.08+0.18);
         o.connect(g).connect(actx.destination); o.start(actx.currentTime+i*0.08); o.stop(actx.currentTime+i*0.08+0.2);
       });
-      // 저음 퍽도 같이
       const o=actx.createOscillator(), g=actx.createGain();
       o.type='sine'; o.frequency.setValueAtTime(140,actx.currentTime);
       o.frequency.exponentialRampToValueAtTime(45,actx.currentTime+0.15);
