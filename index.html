@@ -20,7 +20,8 @@
     filter:drop-shadow(0 6px 14px rgba(0,0,0,.28));}
 
   /* 던지는 직원 (책상 앞 전경, 바닥에 붙임) */
-  #thrower{position:absolute; left:-3%; bottom:0; height:50%; z-index:11;
+  /* aspect-ratio: 이미지 로딩 전에도 박스 폭이 잡혀 사직서 위치가 어긋나지 않게 함 */
+  #thrower{position:absolute; left:-3%; bottom:0; height:50%; aspect-ratio:733/1100; z-index:11;
     pointer-events:none; filter:drop-shadow(0 8px 10px rgba(0,0,0,.25));}
 
   /* 상사 (책상 뒤) */
@@ -36,10 +37,21 @@
   #boss .head{position:absolute; left:33%; top:7%; width:40%; height:33%; z-index:9;}
 
   /* 던질 사직서 */
-  #paper{position:absolute; width:72px; height:108px; cursor:grab; z-index:30; touch-action:none;
-    filter:drop-shadow(0 6px 8px rgba(0,0,0,.45));}
-  #paper.grab{cursor:grabbing;}
+  #paper{position:absolute; width:72px; height:108px; z-index:30; touch-action:none;
+    filter:drop-shadow(0 6px 8px rgba(0,0,0,.45)); pointer-events:none;}
   #paper img{width:100%; height:100%; object-fit:contain; display:block; pointer-events:none;}
+
+  /* 조준선(십자 사격 조준경) */
+  #aim{position:absolute; z-index:32; pointer-events:none; width:76px; height:76px;
+    filter:drop-shadow(0 0 8px rgba(253,168,31,.9));}
+  #aim svg{display:block; width:100%; height:100%;}
+  /* 탭 유도 버튼 */
+  #fireBtn{position:absolute; bottom:22%; left:50%; transform:translateX(-50%);
+    z-index:41; background:var(--accent); color:#3a2300; font:800 18px/1 "Pretendard",sans-serif;
+    border:none; border-radius:50px; padding:14px 36px; cursor:pointer;
+    box-shadow:0 4px 20px rgba(253,168,31,.5); letter-spacing:1px;
+    animation:pulsebtn 1s ease-in-out infinite;}
+  @keyframes pulsebtn{0%,100%{transform:translateX(-50%) scale(1);}50%{transform:translateX(-50%) scale(1.06);}}
 
   /* 이펙트 레이어 */
   .fx{position:absolute; pointer-events:none; z-index:37; opacity:1; transform:scale(.4);
@@ -93,7 +105,22 @@
 
   <div id="paper"><img src="assets/paper.webp" alt="사직서"></div>
 
-  <div class="hint" id="hint">👆 사직서를 잡고 휙! 던지세요 (부장님이 피하니 잘 조준 😏)</div>
+  <!-- 조준선 -->
+  <div id="aim">
+    <svg viewBox="0 0 76 76" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="38" cy="38" r="32" fill="none" stroke="#fda81f" stroke-width="3" opacity="0.9"/>
+      <circle cx="38" cy="38" r="5" fill="#fda81f"/>
+      <line x1="38" y1="2"  x2="38" y2="20" stroke="#fda81f" stroke-width="3" stroke-linecap="round"/>
+      <line x1="38" y1="56" x2="38" y2="74" stroke="#fda81f" stroke-width="3" stroke-linecap="round"/>
+      <line x1="2"  y1="38" x2="20" y2="38" stroke="#fda81f" stroke-width="3" stroke-linecap="round"/>
+      <line x1="56" y1="38" x2="74" y2="38" stroke="#fda81f" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <!-- 발사 버튼 -->
+  <button id="fireBtn">🎯 발사!</button>
+
+  <div class="hint" id="hint">🎯 조준선이 부장 얼굴에 오면 발사!</div>
   <div id="speech"></div>
   <div id="flash"></div>
 
@@ -139,11 +166,15 @@ let W=stage.clientWidth, H=stage.clientHeight;
 addEventListener('resize',()=>{W=stage.clientWidth;H=stage.clientHeight; if(!flying)resetPaper();});
 
 let score=0, combo=0, bestCombo=0, throws=0, hits=0;
-let flying=false, dragging=false, timeScale=1;
+let flying=false, timeScale=1;
 let p={x:0,y:0,vx:0,vy:0,rot:0,vr:0};
-let last={x:0,y:0,t:0}, vel={x:0,y:0};
-const GRAV=0.45, AIR=0.995;
+const GRAV=0.38, AIR=0.995;
 let bossX=0, bossTarget=0, wobble=0, dodged=false, reacting=false;
+
+/* ----- 조준선 상태 ----- */
+const aimEl=document.getElementById('aim');
+const fireBtn=document.getElementById('fireBtn');
+let aimX=W/2, aimY=H*0.38, aimT=0, aimOnTarget=false;
 
 /* ----- 스프라이트 상태 교체 ----- */
 const BOSS={idle:'boss_idle.webp',dodge:'boss_dodge.webp',hit:'boss_hit.webp',perfect:'boss_perfect.webp'};
@@ -167,12 +198,19 @@ function showWord(src,x,y,size){
 }
 
 function resetPaper(){
-  flying=false; dragging=false;
+  flying=false;
   p.rot=-3; p.vr=0;
   const tr=thrImg.getBoundingClientRect();
-  p.x = tr.left + tr.width*0.28 - paper.offsetWidth/2;
-  p.y = tr.top  + tr.height*0.20 - paper.offsetHeight/2;
+  if(tr.width>0){
+    p.x = tr.left + tr.width*0.28 - paper.offsetWidth/2;
+    p.y = tr.top  + tr.height*0.20 - paper.offsetHeight/2;
+  } else {
+    p.x = W*0.04; p.y = H*0.26;
+  }
+  paper.style.display='block';
   setThrower('ready'); setBoss('idle');
+  fireBtn.style.display='block';
+  aimEl.style.display='block';
   render();
 }
 function render(){
@@ -181,62 +219,76 @@ function render(){
   paper.style.transform='rotate('+p.rot+'deg)';
 }
 
-paper.addEventListener('pointerdown',e=>{
-  if(flying) return;
-  dragging=true; paper.classList.add('grab');
-  paper.setPointerCapture(e.pointerId);
+/* ----- 발사 버튼 + stage 탭 ----- */
+function fire(){
+  if(flying||reacting) return;
   hint.style.display='none';
-  last={x:e.clientX,y:e.clientY,t:performance.now()};
-  vel={x:0,y:0};
-});
-paper.addEventListener('pointermove',e=>{
-  if(!dragging) return;
-  const now=performance.now(), dt=Math.max(now-last.t,1);
-  vel.x=(e.clientX-last.x)/dt*16;
-  vel.y=(e.clientY-last.y)/dt*16;
-  p.x += e.clientX-last.x;
-  p.y += e.clientY-last.y;
-  p.rot += (e.clientX-last.x)*0.3;
-  last={x:e.clientX,y:e.clientY,t:now};
-  render();
-});
-paper.addEventListener('pointerup',e=>{
-  if(!dragging) return;
-  dragging=false; paper.classList.remove('grab');
-  const speed=Math.hypot(vel.x,vel.y);
-  if(speed<4){ resetPaper(); return; }
-  launch(vel.x, vel.y);
+  fireBtn.style.display='none';
+  launch(aimX, aimY);
+}
+fireBtn.addEventListener('click', fire);
+stage.addEventListener('pointerdown', e=>{
+  if(e.target===fireBtn||flying||reacting) return;
+  fire();
 });
 
-function launch(vx,vy){
+function launch(targetX, targetY){
   flying=true; throws++;
   dodged=false;
-  p.vx=vx; p.vy=vy;
-  p.vr=vx*0.8 + (Math.sign(vx)||1)*4;
+  /* 손→조준점 방향으로 속도 계산 (20프레임에 도달) */
+  const frames=20;
+  const cx=p.x+paper.offsetWidth/2, cy=p.y+paper.offsetHeight/2;
+  p.vx=(targetX-cx)/frames;
+  p.vy=(targetY-cy)/frames - GRAV*frames/2;
+  p.vr=p.vx*0.9+(Math.sign(p.vx)||1)*3;
   setThrower('throw');
-  const c=paperCenter();
-  showFx('fx_speedLines.webp', c.x, c.y, 220, 0);
+  showFx('fx_speedLines.webp', cx, cy, 200, 0);
   sfx('throw');
 }
 
 function moveBoss(){
   if(reacting) return;
-  const lim=W*0.30;
+  const lim=W*0.28;
   if(flying){
     const pc=paperCenter();
     const br=boss.getBoundingClientRect(), bcx=br.left+br.width/2;
-    if(!dodged && pc.y<H*0.55 && Math.abs(pc.x-bcx)<W*0.26){
+    if(!dodged && pc.y<H*0.60 && Math.abs(pc.x-bcx)<W*0.28){
       const dir = pc.x>bcx ? -1 : 1;
-      bossTarget = Math.max(-lim, Math.min(lim, bossX + dir*W*0.10));
-      dodged=true;
-      setBoss('dodge');
+      bossTarget = Math.max(-lim, Math.min(lim, bossX + dir*W*0.12));
+      dodged=true; setBoss('dodge');
     }
   } else {
     wobble += 0.013;
-    bossTarget = Math.sin(wobble)*lim*0.45;
+    bossTarget = Math.sin(wobble)*lim*0.5;
   }
   bossX += (bossTarget-bossX)*0.14;
   boss.style.transform='translateX(-50%) translateX('+bossX.toFixed(1)+'px)';
+}
+
+function moveAim(){
+  if(flying||reacting){ aimEl.style.display='none'; return; }
+  /* 조준선: 좌우로 sin 왕복, 콤보 많을수록 빨라짐 */
+  aimT += 0.022 + combo*0.004;
+  const range=W*0.32;
+  aimX = W/2 + bossX + Math.sin(aimT)*range;
+  aimY = H*0.35 + Math.sin(aimT*0.7)*H*0.04;
+  aimEl.style.left=(aimX-38)+'px';
+  aimEl.style.top =(aimY-38)+'px';
+  /* 조준선이 부장 머리 위에 있으면 빨간색으로 변경 */
+  const hr=bossHead.getBoundingClientRect();
+  const wasOn=aimOnTarget;
+  aimOnTarget = aimX>hr.left && aimX<hr.right && aimY>hr.top && aimY<hr.bottom;
+  if(aimOnTarget!==wasOn){
+    const col=aimOnTarget?'#ff3b3b':'#fda81f';
+    aimEl.querySelectorAll('circle,line').forEach(el=>{
+      if(el.hasAttribute('stroke')) el.setAttribute('stroke',col);
+      if(el.getAttribute('fill')&&el.getAttribute('fill')!=='none') el.setAttribute('fill',col);
+    });
+    aimEl.style.filter=aimOnTarget
+      ?'drop-shadow(0 0 10px rgba(255,59,59,.9))'
+      :'drop-shadow(0 0 8px rgba(253,168,31,.9))';
+  }
+  aimEl.style.display='block';
 }
 
 function loop(){
@@ -252,6 +304,7 @@ function loop(){
     if(p.y>H+120 || p.x<-160 || p.x>W+160){ miss(); }
   }
   moveBoss();
+  moveAim();
   requestAnimationFrame(loop);
 }
 
@@ -302,7 +355,7 @@ function hit(perfect, x, y){
     stage.classList.remove('slow'); timeScale=1;
     reacting=false;
     if(throws>=10){ showResult(); } else { resetPaper(); }
-  }, 850);
+  }, 3000);
 }
 function miss(){
   flying=false; combo=0; updateCombo();
@@ -415,6 +468,9 @@ function sfx(type){
   }catch(e){}
 }
 
+// 이미지 로드 완료 후 사직서 위치 재계산 (직원 손에 정확히 놓이도록)
+thrImg.addEventListener('load',()=>{ if(!flying) resetPaper(); });
+addEventListener('load',()=>{ if(!flying) resetPaper(); });
 resetPaper();
 loop();
 </script>
