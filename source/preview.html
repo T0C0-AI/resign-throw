@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>[시안2] 사직서 던지기 — 일러스트 스프라이트</title>
+<style>
+  :root{ --paper:#f4f1e8; --accent:#fda81f; --accent2:#ffd866; }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%; overflow:hidden; font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;}
+  #stage{
+    position:relative; width:100%; height:100%;
+    background:#bfeeff url("assets/bg_office.webp") center/cover no-repeat;
+    overflow:hidden; touch-action:none; user-select:none;
+  }
+
+  /* 책상 (앞 레이어) */
+  #desk{position:absolute; bottom:-2%; left:50%; transform:translateX(-50%) scaleX(.9);
+    width:44%; max-width:none; z-index:8; pointer-events:none;
+    filter:drop-shadow(0 6px 14px rgba(0,0,0,.28));}
+
+  /* 던지는 직원 (책상 앞 전경, 바닥에 붙임) */
+  #thrower{position:absolute; left:-3%; bottom:0; height:50%; z-index:11;
+    pointer-events:none; filter:drop-shadow(0 8px 10px rgba(0,0,0,.25));}
+
+  /* 상사 (책상 뒤) */
+  #boss{position:absolute; left:50%; bottom:6.5%; transform:translateX(-50%);
+    width:240px; height:300px; z-index:6; transition:transform .08s;}
+  #boss .bossimg{position:absolute; left:50%; bottom:0; transform:translateX(-50%);
+    height:100%; width:auto; filter:drop-shadow(0 8px 12px rgba(0,0,0,.3));}
+  /* 상태별 미세 정렬 (얼굴 위치 맞춤) */
+  #boss[data-state="dodge"]  .bossimg{height:98%;}
+  #boss[data-state="hit"]    .bossimg{height:104%; transform:translateX(-50%) translateY(-58px);}
+  #boss[data-state="perfect"].bossimg{height:112%; transform:translateX(-62%) translateY(-42px);}
+  /* 충돌 판정용 투명 박스(부장 얼굴) */
+  #boss .head{position:absolute; left:33%; top:7%; width:40%; height:33%; z-index:9;}
+
+  /* 던질 사직서 */
+  #paper{position:absolute; width:72px; height:108px; cursor:grab; z-index:30; touch-action:none;
+    filter:drop-shadow(0 6px 8px rgba(0,0,0,.45));}
+  #paper.grab{cursor:grabbing;}
+  #paper img{width:100%; height:100%; object-fit:contain; display:block; pointer-events:none;}
+
+  /* 이펙트 레이어 */
+  .fx{position:absolute; pointer-events:none; z-index:37; opacity:1; transform:scale(.4);
+    transition:transform .5s ease-out, opacity .5s ease-out; will-change:transform,opacity;}
+  .fxword{position:absolute; pointer-events:none; z-index:39; opacity:1; transform:translateY(0) scale(.5);
+    transition:transform .55s cubic-bezier(.2,1.4,.4,1), opacity .55s ease-out;}
+
+  /* HUD */
+  #hud{position:absolute; top:10px; left:10px; right:10px; display:flex; justify-content:space-between; z-index:40; pointer-events:none;}
+  .card{background:rgba(20,30,45,.72); color:#eef; padding:8px 14px; border-radius:10px; font-size:13px; line-height:1.5; backdrop-filter:blur(4px);}
+  .card .big{font-size:22px; font-weight:800;}
+  #combo{color:var(--accent2);}
+  #speech{position:absolute; left:50%; bottom:54%; transform:translateX(-50%) scale(0); transform-origin:bottom center;
+    background:#fff; color:#222; padding:9px 14px; border-radius:14px; font-size:14px; font-weight:700; white-space:nowrap;
+    box-shadow:0 4px 14px rgba(0,0,0,.3); z-index:35; transition:transform .15s cubic-bezier(.2,1.4,.4,1);}
+  #speech::after{content:""; position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); border:8px solid transparent; border-top-color:#fff; border-bottom:0;}
+  #speech.show{transform:translateX(-50%) scale(1);}
+  .pop{position:absolute; z-index:38; font-weight:900; font-size:24px; pointer-events:none; animation:popUp .9s ease-out forwards; text-shadow:0 2px 4px rgba(0,0,0,.4);}
+  @keyframes popUp{0%{transform:translateY(0) scale(.6); opacity:0;} 20%{opacity:1; transform:translateY(-10px) scale(1.2);} 100%{transform:translateY(-70px) scale(1); opacity:0;}}
+  #flash{position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:50;}
+  #flash.on{animation:fl .4s ease-out;}
+  @keyframes fl{0%{opacity:.55;}100%{opacity:0;}}
+  #stage.slow #paper, #stage.slow #boss{transition:transform .4s linear;}
+  .hint{position:absolute; bottom:34%; left:50%; transform:translateX(-50%); color:#1c3a4a; font-size:13px; background:rgba(255,255,255,.7); padding:6px 14px; border-radius:20px; z-index:36; animation:bob 1.6s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-6px);}}
+
+  #result{position:absolute; inset:0; background:rgba(12,20,30,.84); z-index:60; display:none; flex-direction:column; align-items:center; justify-content:center; color:#fff; text-align:center; padding:24px; backdrop-filter:blur(3px);}
+  #result.show{display:flex;}
+  #result h2{font-size:26px; margin-bottom:6px;}
+  #result .sub{color:#9aa0a8; margin-bottom:18px; font-size:14px;}
+  #result .stats{background:#16263a; border-radius:14px; padding:18px 26px; font-size:16px; line-height:2; min-width:240px;}
+  #result .stats span{color:var(--accent2); font-weight:800;}
+  #result .btns{margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;}
+  button{font-family:inherit; border:0; cursor:pointer; padding:12px 20px; border-radius:10px; font-size:15px; font-weight:700;}
+  .b-primary{background:var(--accent); color:#3a2300;}
+  .b-ghost{background:#22364a; color:#dfe4ea;}
+  #toast{position:absolute; bottom:8%; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:10px 18px; border-radius:24px; font-size:13px; opacity:0; z-index:70; transition:opacity .3s;}
+  #toast.show{opacity:1;}
+  #tag{position:absolute; top:50px; left:50%; transform:translateX(-50%); z-index:45; background:var(--accent); color:#3a2300; font-weight:800; font-size:12px; padding:5px 12px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,.25);}
+</style>
+</head>
+<body>
+<div id="stage">
+  <img id="thrower" src="assets/thrower_ready.webp" alt="직원">
+
+  <div id="boss" data-state="idle">
+    <img class="bossimg" src="assets/boss_idle.webp" alt="부장">
+    <div class="head"></div>
+  </div>
+
+  <img id="desk" src="assets/desk.webp" alt="책상">
+
+  <div id="paper"><img src="assets/paper.webp" alt="사직서"></div>
+
+  <div id="tag">🎨 시안2 — 일러스트 스프라이트 + 이펙트</div>
+  <div class="hint" id="hint">👆 사직서를 잡고 휙! 던지세요 (부장님이 피하니 잘 조준 😏)</div>
+  <div id="speech"></div>
+  <div id="flash"></div>
+
+  <div id="hud">
+    <div class="card">점수<div class="big" id="score">0</div></div>
+    <div class="card" style="text-align:right">남은 사직서<div class="big" id="ammo">∞</div></div>
+  </div>
+  <div class="card" id="comboCard" style="position:absolute; top:84px; left:50%; transform:translateX(-50%); display:none; z-index:40;">
+    🔥 <span id="combo">0</span> 콤보!
+  </div>
+
+  <div id="result">
+    <h2 id="rTitle">오늘의 사직 성과 🔥</h2>
+    <div class="sub">— 퇴근길, 마음만은 이미 자유 —</div>
+    <div class="stats">
+      던진 사직서 <span id="rThrow">0</span>장<br>
+      명중 <span id="rHit">0</span>장 (명중률 <span id="rRate">0</span>%)<br>
+      최고 콤보 <span id="rCombo">0</span> 연속<br>
+      총점 <span id="rScore">0</span>점
+    </div>
+    <div class="btns">
+      <button class="b-primary" id="shareBtn">📋 결과 복사해서 단톡방 자랑</button>
+      <button class="b-ghost" id="againBtn">다시 던지기</button>
+    </div>
+  </div>
+  <div id="toast"></div>
+</div>
+
+<script>
+/* ===== 물리·점수·충돌 로직은 원본 그대로. 그림 교체 + 상태별 스프라이트/이펙트만 추가 ===== */
+const stage=document.getElementById('stage');
+const paper=document.getElementById('paper');
+const boss=document.getElementById('boss');
+const bossImg=boss.querySelector('.bossimg');
+const bossHead=boss.querySelector('.head');
+const thrImg=document.getElementById('thrower');
+const speech=document.getElementById('speech');
+const flash=document.getElementById('flash');
+const elScore=document.getElementById('score'), elCombo=document.getElementById('combo');
+const comboCard=document.getElementById('comboCard'), hint=document.getElementById('hint');
+
+let W=stage.clientWidth, H=stage.clientHeight;
+addEventListener('resize',()=>{W=stage.clientWidth;H=stage.clientHeight; if(!flying)resetPaper();});
+
+let score=0, combo=0, bestCombo=0, throws=0, hits=0;
+let flying=false, dragging=false, timeScale=1;
+let p={x:0,y:0,vx:0,vy:0,rot:0,vr:0};
+let last={x:0,y:0,t:0}, vel={x:0,y:0};
+const GRAV=0.45, AIR=0.995;
+let bossX=0, bossTarget=0, wobble=0, dodged=false, reacting=false;
+
+/* ----- 스프라이트 상태 교체 ----- */
+const BOSS={idle:'boss_idle.webp',dodge:'boss_dodge.webp',hit:'boss_hit.webp',perfect:'boss_perfect.webp'};
+function setBoss(s){ if(boss.dataset.state!==s){ boss.dataset.state=s; bossImg.src='assets/'+BOSS[s]; } }
+function setThrower(s){ thrImg.src='assets/thrower_'+s+'.webp'; }
+
+/* ----- 이펙트 띄우기 ----- */
+function showFx(src,x,y,size,spin){
+  const e=document.createElement('img'); e.className='fx'; e.src='assets/'+src;
+  e.style.left=(x-size/2)+'px'; e.style.top=(y-size/2)+'px'; e.style.width=size+'px';
+  stage.appendChild(e);
+  requestAnimationFrame(()=>{ e.style.transform='scale(1.25) rotate('+(spin||0)+'deg)'; e.style.opacity='0'; });
+  setTimeout(()=>e.remove(),520);
+}
+function showWord(src,x,y,size){
+  const e=document.createElement('img'); e.className='fxword'; e.src='assets/'+src;
+  e.style.left=(x-size/2)+'px'; e.style.top=(y-size/2)+'px'; e.style.width=size+'px';
+  stage.appendChild(e);
+  requestAnimationFrame(()=>{ e.style.transform='translateY(-30px) scale(1.1)'; e.style.opacity='0'; });
+  setTimeout(()=>e.remove(),560);
+}
+
+function resetPaper(){
+  flying=false; dragging=false;
+  p.rot=-3; p.vr=0;
+  const tr=thrImg.getBoundingClientRect();
+  p.x = tr.left + tr.width*0.28 - paper.offsetWidth/2;
+  p.y = tr.top  + tr.height*0.20 - paper.offsetHeight/2;
+  setThrower('ready'); setBoss('idle');
+  render();
+}
+function render(){
+  paper.style.left=p.x+'px';
+  paper.style.top=p.y+'px';
+  paper.style.transform='rotate('+p.rot+'deg)';
+}
+
+paper.addEventListener('pointerdown',e=>{
+  if(flying) return;
+  dragging=true; paper.classList.add('grab');
+  paper.setPointerCapture(e.pointerId);
+  hint.style.display='none';
+  last={x:e.clientX,y:e.clientY,t:performance.now()};
+  vel={x:0,y:0};
+});
+paper.addEventListener('pointermove',e=>{
+  if(!dragging) return;
+  const now=performance.now(), dt=Math.max(now-last.t,1);
+  vel.x=(e.clientX-last.x)/dt*16;
+  vel.y=(e.clientY-last.y)/dt*16;
+  p.x += e.clientX-last.x;
+  p.y += e.clientY-last.y;
+  p.rot += (e.clientX-last.x)*0.3;
+  last={x:e.clientX,y:e.clientY,t:now};
+  render();
+});
+paper.addEventListener('pointerup',e=>{
+  if(!dragging) return;
+  dragging=false; paper.classList.remove('grab');
+  const speed=Math.hypot(vel.x,vel.y);
+  if(speed<4){ resetPaper(); return; }
+  launch(vel.x, vel.y);
+});
+
+function launch(vx,vy){
+  flying=true; throws++;
+  dodged=false;
+  p.vx=vx; p.vy=vy;
+  p.vr=vx*0.8 + (Math.sign(vx)||1)*4;
+  setThrower('throw');
+  const c=paperCenter();
+  showFx('fx_speedLines.webp', c.x, c.y, 220, 0);
+  sfx('throw');
+}
+
+function moveBoss(){
+  if(reacting) return;
+  const lim=W*0.30;
+  if(flying){
+    const pc=paperCenter();
+    const br=boss.getBoundingClientRect(), bcx=br.left+br.width/2;
+    if(!dodged && pc.y<H*0.55 && Math.abs(pc.x-bcx)<W*0.26){
+      const dir = pc.x>bcx ? -1 : 1;
+      bossTarget = Math.max(-lim, Math.min(lim, bossX + dir*W*0.10));
+      dodged=true;
+      setBoss('dodge');
+    }
+  } else {
+    wobble += 0.013;
+    bossTarget = Math.sin(wobble)*lim*0.45;
+  }
+  bossX += (bossTarget-bossX)*0.14;
+  boss.style.transform='translateX(-50%) translateX('+bossX.toFixed(1)+'px)';
+}
+
+function loop(){
+  if(flying){
+    const ts=timeScale;
+    p.vy += GRAV*ts;
+    p.vx *= Math.pow(AIR,ts);
+    p.x += p.vx*ts;
+    p.y += p.vy*ts;
+    p.rot += p.vr*ts;
+    render();
+    checkHit();
+    if(p.y>H+120 || p.x<-160 || p.x>W+160){ miss(); }
+  }
+  moveBoss();
+  requestAnimationFrame(loop);
+}
+
+function paperCenter(){ const r=paper.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }
+function checkHit(){
+  if(!flying) return;
+  const c=paperCenter();
+  const hr=bossHead.getBoundingClientRect();
+  const cx=hr.left+hr.width/2, cy=hr.top+hr.height/2;
+  const pad=28;
+  if(c.x>hr.left-pad && c.x<hr.right+pad && c.y>hr.top-pad && c.y<hr.bottom+pad){
+    const dist=Math.hypot(c.x-cx, c.y-cy);
+    const perfect = dist < hr.width*0.48;
+    hit(perfect, c.x, c.y);
+  }
+}
+
+const REACT=["어, 어이! 이게 무슨 짓이야!","자, 자네 지금 제정신인가?","이거 인사팀에 보고할 거야!","허허… 요즘 젊은 것들은…","내, 내 얼굴에 던졌어?!","수리 안 해! 반려야 반려!","올해 인사고과 각오해…!"];
+const PERFECT=["으악! 정통으로!!","눈, 눈에 맞았어!","끄응…! 정확하네 이놈…"];
+const MISS=["이렇게 던지면 사직서 안 받아줄 건데~? 😜","메~롱 😝 안 맞았지롱~","에이~ 또 빗나감 ㅋㅋ 퇴사 글렀네~","안 받아~ 안 받아~ 다시 던져보든가~","그 실력으론 평~생 우리 회사야 ㅋㅋㅋ","풉, 땀이나 닦고 던지지 그래~?","어휴~ 그 조준 실력 어디 안 가네 ㅋ"];
+const DODGE=["후훗, 못 피할 줄 알았어? 😏","메~롱 피했지롱~ 😝","그렇게 느려서야 평생 못 맞춰~","어이쿠~ 살짝 비켜줬지롱~ ㅋㅋ","안 맞아줄 건데~ 약오르지? 😜","아슬아슬~ 안 받지롱~ 🤭"];
+
+function hit(perfect, x, y){
+  flying=false;
+  hits++; combo++; bestCombo=Math.max(bestCombo,combo);
+  const base = perfect?100:50;
+  const bonus = (combo-1)*20;
+  const gain = base+bonus;
+  score += gain;
+  elScore.textContent=score;
+
+  stage.classList.add('slow'); flash.classList.add('on');
+  setTimeout(()=>flash.classList.remove('on'),400);
+  timeScale=0.18;
+  reacting=true;
+  setBoss(perfect?'perfect':'hit');
+  boss.style.transform='translateX(-50%) translateX('+bossX.toFixed(1)+'px) translateY(4px) rotate(-2deg)';
+  showFx(perfect?'fx_perfect.webp':'fx_impact.webp', x, y, perfect?280:180, 0);
+  showWord('fx_word_hit.webp', x, y-30, 150);
+  sfx(perfect?'perfect':'hit');
+  scream(perfect);
+
+  popScore('+'+gain+(perfect?' 💥PERFECT':''), x, y, perfect);
+  say(perfect?rand(PERFECT):rand(REACT));
+  updateCombo();
+
+  setTimeout(()=>{
+    stage.classList.remove('slow'); timeScale=1;
+    reacting=false;
+    if(throws>=10){ showResult(); } else { resetPaper(); }
+  }, 850);
+}
+function miss(){
+  flying=false; combo=0; updateCombo();
+  if(dodged){
+    const br=boss.getBoundingClientRect();
+    showWord('fx_word_dodge.webp', br.left+br.width/2, br.top+br.height*0.2, 160);
+    say(rand(DODGE));
+  } else { say(rand(MISS)); }
+  if(throws>=10){ showResult(); } else { resetPaper(); }
+}
+
+function updateCombo(){
+  if(combo>=2){ comboCard.style.display='block'; elCombo.textContent=combo; }
+  else comboCard.style.display='none';
+}
+function say(t){
+  speech.textContent=t; speech.classList.add('show');
+  clearTimeout(say._t); say._t=setTimeout(()=>speech.classList.remove('show'),1400);
+}
+function popScore(t,x,y,perfect){
+  const e=document.createElement('div'); e.className='pop'; e.textContent=t;
+  e.style.left=(x-20)+'px'; e.style.top=(y-10)+'px';
+  e.style.color=perfect?'#ff5d5d':'#fda81f';
+  stage.appendChild(e); setTimeout(()=>e.remove(),900);
+}
+function rand(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+function showResult(){
+  const rate=throws?Math.round(hits/throws*100):0;
+  document.getElementById('rThrow').textContent=throws;
+  document.getElementById('rHit').textContent=hits;
+  document.getElementById('rRate').textContent=rate;
+  document.getElementById('rCombo').textContent=bestCombo;
+  document.getElementById('rScore').textContent=score;
+  let title="오늘도 마음만 퇴사… 🥲";
+  if(rate>=80) title="당신은 사직서 명사수 🎯";
+  else if(rate>=50) title="사이다 한 사발 들이켰다 🥤";
+  document.getElementById('rTitle').textContent=title;
+  document.getElementById('result').classList.add('show');
+}
+document.getElementById('againBtn').onclick=()=>{
+  score=0;combo=0;bestCombo=0;throws=0;hits=0;
+  elScore.textContent=0; updateCombo();
+  document.getElementById('result').classList.remove('show');
+  resetPaper();
+};
+document.getElementById('shareBtn').onclick=async()=>{
+  const rate=throws?Math.round(hits/throws*100):0;
+  const txt=`🗑️ 사직서 던지기 결과\n사직서 ${throws}장 투척 / 명중 ${hits}장 (${rate}%)\n최고 ${bestCombo}콤보 · 총 ${score}점`;
+  try{ await navigator.clipboard.writeText(txt); toast('복사 완료! 단톡방에 붙여넣기 하세요 📋'); }
+  catch(e){ toast('복사 실패 — 스크린샷으로 공유해주세요 📸'); }
+};
+function toast(t){
+  const el=document.getElementById('toast'); el.textContent=t; el.classList.add('show');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+let actx;
+function scream(big){
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const t=actx.currentTime, dur=big?0.6:0.45;
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.type='sawtooth';
+    o.frequency.setValueAtTime(big?520:430, t);
+    o.frequency.linearRampToValueAtTime(big?920:770, t+0.08);
+    o.frequency.linearRampToValueAtTime(big?700:560, t+0.2);
+    o.frequency.exponentialRampToValueAtTime(big?180:170, t+dur);
+    const lfo=actx.createOscillator(), lg=actx.createGain();
+    lfo.type='sine'; lfo.frequency.value=15; lg.gain.value=45;
+    lfo.connect(lg).connect(o.frequency);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.32, t+0.03);
+    g.gain.setValueAtTime(0.28, t+dur*0.7);
+    g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+    o.connect(g).connect(actx.destination);
+    o.start(t); lfo.start(t);
+    o.stop(t+dur+0.02); lfo.stop(t+dur+0.02);
+  }catch(e){}
+}
+function sfx(type){
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    if(type==='throw'){
+      const o=actx.createOscillator(), g=actx.createGain();
+      o.type='triangle'; o.frequency.setValueAtTime(700,actx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(180,actx.currentTime+0.18);
+      g.gain.setValueAtTime(0.18,actx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+0.2);
+      o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime+0.2);
+    } else if(type==='hit'){
+      const o=actx.createOscillator(), g=actx.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(160,actx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(50,actx.currentTime+0.15);
+      g.gain.setValueAtTime(0.4,actx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+0.25);
+      o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime+0.25);
+    } else {
+      [880,1320].forEach((f,i)=>{ const o=actx.createOscillator(), g=actx.createGain();
+        o.type='square'; o.frequency.value=f;
+        g.gain.setValueAtTime(0.0001,actx.currentTime+i*0.08);
+        g.gain.exponentialRampToValueAtTime(0.15,actx.currentTime+i*0.08+0.01);
+        g.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+i*0.08+0.18);
+        o.connect(g).connect(actx.destination); o.start(actx.currentTime+i*0.08); o.stop(actx.currentTime+i*0.08+0.2);
+      });
+      const o=actx.createOscillator(), g=actx.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(140,actx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(45,actx.currentTime+0.15);
+      g.gain.setValueAtTime(0.35,actx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,actx.currentTime+0.25);
+      o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime+0.25);
+    }
+  }catch(e){}
+}
+
+resetPaper();
+loop();
+</script>
+</body>
+</html>
